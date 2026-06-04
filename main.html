@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>EEG Art Installation</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: #0d0d0d;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    #info-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background-color: #1a1a2e;
+      border-bottom: 1px solid #333;
+    }
+
+    #info-bar h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+
+    #status {
+      font-size: 14px;
+      color: #aaa;
+    }
+
+    #canvas-area {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    canvas {
+      border: 1px solid #333;
+      border-radius: 8px;
+    }
+
+    #wave-panel {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 16px;
+      flex-wrap: wrap;
+    }
+
+    .wave-box {
+      background-color: #1a1a2e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 14px 20px;
+      text-align: center;
+      min-width: 130px;
+    }
+
+    .wave-name {
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 6px;
+    }
+
+    .wave-value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #mode-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding-bottom: 20px;
+    }
+
+    button {
+      background-color: #1a1a2e;
+      color: white;
+      border: 1px solid #555;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background-color: #2a2a4e;
+    }
+
+    button.active {
+      border-color: #7b5bf7;
+      background-color: #2a1a4e;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="info-bar">
+    <h1>🧠 EEG Art Installation</h1>
+    <span id="status">Mode: <strong id="mode-name">Focus</strong></span>
+  </div>
+
+  <div id="canvas-area">
+    <canvas id="myCanvas" width="720" height="400"></canvas>
+  </div>
+
+  <div id="wave-panel">
+    <div class="wave-box">
+      <div class="wave-name">Alpha Wave</div>
+      <div class="wave-value" id="alpha-display" style="color: #5b9ef7;">0.00</div>
+    </div>
+    <div class="wave-box">
+      <div class="wave-name">Beta Wave</div>
+      <div class="wave-value" id="beta-display" style="color: #f97b5b;">0.00</div>
+    </div>
+    <div class="wave-box">
+      <div class="wave-name">Theta Wave</div>
+      <div class="wave-value" id="theta-display" style="color: #7be0a5;">0.00</div>
+    </div>
+  </div>
+
+  <div id="mode-buttons">
+    <button id="btn-focus" class="active" onclick="changeMode('focus')">Focus</button>
+    <button id="btn-relax" onclick="changeMode('relax')">Relax</button>
+    <button id="btn-meditation" onclick="changeMode('meditation')">Meditation</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('myCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let time = 0;
+    let currentMode = 'focus';
+    let shapes = [];
+
+    const modeInfo = {
+      focus: {
+        background: '#050510',
+        colors: ['#5b9ef7', '#f97b5b', '#ffffff', '#a78bfa'],
+        label: 'Focus'
+      },
+      relax: {
+        background: '#050f08',
+        colors: ['#7be0a5', '#5bc8e0', '#b5f7c8', '#d4f0ff'],
+        label: 'Relax'
+      },
+      meditation: {
+        background: '#0a0510',
+        colors: ['#c4a0f5', '#f0c4f5', '#7b5bf7', '#ffb7e8'],
+        label: 'Meditation'
+      }
+    };
+
+    function createShapes() {
+      shapes = [];
+
+      for (let i = 0; i < 20; i++) {
+        shapes.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: 10 + Math.random() * 55,
+          speedX: (Math.random() - 0.5) * 0.7,
+          speedY: (Math.random() - 0.5) * 0.7,
+          phase: Math.random() * Math.PI * 2,
+          type: Math.floor(Math.random() * 3)
+        });
+      }
+    }
+
+    function calculateWaves() {
+      const noise = freq => (
+        Math.sin(time * freq) * 0.5 +
+        Math.sin(time * freq * 1.3 + 1) * 0.3 +
+        Math.sin(time * freq * 0.7 + 2) * 0.2
+      );
+
+      let alpha, beta, theta;
+
+      if (currentMode === 'focus') {
+        alpha = 0.3 + noise(0.4) * 0.15;
+        beta = 0.7 + noise(1.1) * 0.2;
+        theta = 0.2 + noise(0.3) * 0.1;
+      } else if (currentMode === 'relax') {
+        alpha = 0.75 + noise(0.3) * 0.15;
+        beta = 0.25 + noise(0.9) * 0.1;
+        theta = 0.35 + noise(0.5) * 0.15;
+      } else {
+        alpha = 0.5 + noise(0.2) * 0.1;
+        beta = 0.15 + noise(0.7) * 0.08;
+        theta = 0.85 + noise(0.4) * 0.1;
+      }
+
+      return {
+        alpha: Math.max(0, Math.min(1, alpha)),
+        beta: Math.max(0, Math.min(1, beta)),
+        theta: Math.max(0, Math.min(1, theta))
+      };
+    }
+
+    function drawShape(x, y, r, type, color) {
+      ctx.beginPath();
+      ctx.fillStyle = color;
+
+      if (type === 0) {
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+      } else if (type === 1) {
+        ctx.moveTo(x, y - r);
+        ctx.lineTo(x + r * 0.866, y + r * 0.5);
+        ctx.lineTo(x - r * 0.866, y + r * 0.5);
+        ctx.closePath();
+      } else {
+        ctx.rect(x - r * 0.7, y - r * 0.7, r * 1.4, r * 1.4);
+      }
+
+      ctx.fill();
+    }
+
+    function animate() {
+      const W = canvas.width;
+      const H = canvas.height;
+      const waves = calculateWaves();
+      const mode = modeInfo[currentMode];
+
+      time += 0.018;
+
+      ctx.fillStyle = mode.background;
+      ctx.fillRect(0, 0, W, H);
+
+      shapes.forEach((shape, index) => {
+        shape.x += shape.speedX * (0.5 + waves.beta * 1.5);
+        shape.y += shape.speedY * (0.5 + waves.beta * 1.5);
+
+        if (shape.x < -120) shape.x = W + 80;
+        if (shape.x > W + 120) shape.x = -80;
+        if (shape.y < -120) shape.y = H + 80;
+        if (shape.y > H + 120) shape.y = -80;
+
+        const pulse = Math.sin(time * 1.5 + shape.phase) * 0.3 + 0.7;
+        const size = shape.radius * (0.6 + waves.alpha * 0.8) * pulse;
+        const opacity = 0.07 + waves.theta * 0.25;
+        const color = mode.colors[index % mode.colors.length];
+
+        ctx.globalAlpha = opacity;
+        drawShape(shape.x, shape.y, size, shape.type, color);
+      });
+
+      ctx.globalAlpha = 1;
+      drawGlow(W, H, waves, mode);
+      drawWaveLine(W, H, waves, mode);
+      updateDisplay(waves, mode);
+
+      requestAnimationFrame(animate);
+    }
+
+    function drawGlow(W, H, waves, mode) {
+      const glow = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, W * 0.4 * waves.theta);
+      glow.addColorStop(0, mode.colors[0] + '44');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawWaveLine(W, H, waves, mode) {
+      ctx.beginPath();
+      ctx.strokeStyle = mode.colors[0];
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.55;
+
+      for (let x = 0; x < W; x++) {
+        const ratio = x / W;
+        const y = H - 28
+          + Math.sin(ratio * 18 + time * 5) * 8 * waves.alpha
+          + Math.sin(ratio * 33 + time * 9) * 5 * waves.beta
+          + Math.sin(ratio * 9 + time * 3) * 12 * waves.theta;
+
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    function updateDisplay(waves, mode) {
+      document.getElementById('alpha-display').textContent = waves.alpha.toFixed(2);
+      document.getElementById('beta-display').textContent = waves.beta.toFixed(2);
+      document.getElementById('theta-display').textContent = waves.theta.toFixed(2);
+      document.getElementById('mode-name').textContent = mode.label;
+    }
+
+    function changeMode(newMode) {
+      currentMode = newMode;
+
+      document.querySelectorAll('button').forEach(button => {
+        button.classList.remove('active');
+      });
+
+      document.getElementById('btn-' + newMode).classList.add('active');
+    }
+
+    createShapes();
+    animate();
+  </script>
+
+</body>
+</html>
